@@ -1,15 +1,18 @@
 ebookjs
 =====
 
-A library for easy reading of ebook files. Currently only supports reading .epub files. This library is solely focused on reading, there is no web reader functionality.
+A library for easy reading of ebook files. Currently only supports reading .epub files.
+
+This library is solely focused on reading files and returning objects you can work with, there is no GUI reader functionality currently or planned.
 
 Below is a simple example
 
 ```html
-<input id="upload" type=file   accept="text/epub" name="files[]" size=1>
+<input id="upload" type=file accept="text/epub" name="files[]" size=1>
 <script>
+import ebookjs from 'ebookjs'
 function handleFileSelect (evt) {
-  fileToContent(evt.target.files[0]).then(content => {
+  ebookjs.fileToContent(evt.target.files[0]).then(content => {
     processChapters(content.chapters)
   })
 }

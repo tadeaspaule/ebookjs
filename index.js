@@ -135,12 +135,9 @@ async function fileToContent (file) {
   // here possiblePrefix is used. Most books follow standard format of OEBPS but sometimes the path is different, this handles that
   var getChapterContent = (fname) => filenameToContent[fname] || filenameToContent[`OEBPS/${fname}`] || filenameToContent[`${possiblePrefix}/${fname}`]
   var chapters = orderedFilenames.map(of => getChapterContent(of))
-  console.log(chapters)
   // 6.1 possibly add chapter names from .opf file
   var guide = opfContent.substring(opfContent.indexOf('<guide'),opfContent.indexOf('</guide>'))
   var references = guide.matchAll(/<reference [^>]+>/gi)
-  console.log(references)
-  console.log(filenameToContent)
   for (const match of references) {
     var chapterHref = match.toString().match(/href="[^"]+/).toString().substring(6)
     var chapterContent = getChapterContent(chapterHref)
@@ -167,5 +164,6 @@ async function fileToContent (file) {
     language: getMetadata('dc:language',metadata)
   })
 }
-
-export {fileToContent as default};
+var ebookjs = {}
+ebookjs.fileToContent = fileToContent
+export default ebookjs;
