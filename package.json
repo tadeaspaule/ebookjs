@@ -2,6 +2,10 @@
   "name": "ebookjs",
   "version": "0.5.1",
   "description": "Tiny utility for reading ebook file uploads",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tadeaspaule/ebookjs.git"
+  },
   "keywords": [
     "ebook",
     "ebookjs",
