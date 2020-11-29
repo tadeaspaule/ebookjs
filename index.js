@@ -96,12 +96,20 @@ async function fileToContent (file) {
       var chapterName = null
       var htmlDoc = parser.parseFromString(fileResults[i].explicitOriginalTarget.result,"text/html")
       var body = htmlDoc.getElementsByTagName("body")
-      // try to find heading tags with chapter name
-      for (var j = 0; j < 3; j++) {
-        var tags = htmlDoc.getElementsByTagName(["h1","h2","h3"][j])
-        if (tags && tags.length > 0) {
-          chapterName = [...tags].map(tag => tag.innerText).join(" ")
-          break;
+      // sometimes chapter titles are included in <title> tags in the head
+      var head = htmlDoc.getElementsByTagName("head")
+      if (head && head.length > 0) {
+        var title = head[0].getElementsByTagName("title")
+        if (title && title.length > 0) chapterName = title[0].innerText
+      }
+      if (!chapterName) {
+        // try to find heading tags with chapter name
+        for (var j = 0; j < 3; j++) {
+          var tags = htmlDoc.getElementsByTagName(["h1","h2","h3"][j])
+          if (tags && tags.length > 0) {
+            chapterName = [...tags].map(tag => tag.innerText).join(" ")
+            break;
+          }
         }
       }
       filenameToContent[fname] = new EbookChapter(chapterName,fname,htmlDoc,body ? body[0].innerText : null)
@@ -121,6 +129,17 @@ async function fileToContent (file) {
   for (const match of items) {
     var href = match.toString().match(/href="[^"]+/).toString().substring(6)
     var id = match.toString().match(/id="[^"]+/).toString().substring(4)
+    if (href.startsWith('../')) {
+      // hrefs to files may be given in relative notation, should correct href to absolute notation before usage
+      var backupCount = 0
+      while (href.startsWith('../')) {
+        backupCount += 1
+        href = href.slice(3)
+      }
+      var opfPathFolders = opfFilename.split('/')
+      opfPathFolders = opfPathFolders.slice(0,opfPathFolders.length-1) // gets rid of the .opf filename at the end, leaving just folder names
+      if (backupCount < opfPathFolders.length) href = opfPathFolders.slice(0,opfPathFolders.length-backupCount).join('/') + `/${href}`
+    }
     idToHref[id] = href
   }
   // 5.3 read spine (linear reading order of files, id mapping used here)
