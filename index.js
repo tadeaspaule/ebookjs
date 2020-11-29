@@ -84,45 +84,14 @@ async function fileToContent (file) {
   }
   if (!opfFilename) throw '.opf file not found'
   var blobResults = await Promise.all(blobPromises.map(pi => pi.promise))
-  // 4. parse the file contents
-  var fileResults = await Promise.all(blobResults.map((r,i) => pFileReader(r, blobPromises[i].name.match(imageRegex) ? 'image' : 'text')))
-  var parser = new DOMParser();
-  var filenameToContent = {}
-  for (var i = 0; i < fileResults.length; i++) {
-    var fname = blobPromises[i].name
-    if (fname.match(imageRegex)) filenameToContent[fname] = fileResults[i].target.result // image data
-    else if (fname.match(htmlRegex)) {
-      // html, i.e. text content
-      var chapterName = null
-      var htmlDoc = parser.parseFromString(fileResults[i].explicitOriginalTarget.result,"text/html")
-      var body = htmlDoc.getElementsByTagName("body")
-      // sometimes chapter titles are included in <title> tags in the head
-      var head = htmlDoc.getElementsByTagName("head")
-      if (head && head.length > 0) {
-        var title = head[0].getElementsByTagName("title")
-        if (title && title.length > 0) chapterName = title[0].innerText
-      }
-      if (!chapterName) {
-        // try to find heading tags with chapter name
-        for (var j = 0; j < 3; j++) {
-          var tags = htmlDoc.getElementsByTagName(["h1","h2","h3"][j])
-          if (tags && tags.length > 0) {
-            chapterName = [...tags].map(tag => tag.innerText).join(" ")
-            break;
-          }
-        }
-      }
-      filenameToContent[fname] = new EbookChapter(chapterName,fname,htmlDoc,body ? body[0].innerText : null)
-    }
-    else filenameToContent[fname] = fileResults[i].explicitOriginalTarget.result // css
-  }
-  // 5. read .opf file for chapter order, metadata etc
+  // 4. read .opf file for chapter order, metadata etc
   var opfBlob = await zip.files[opfFilename].async("blob")
   var opfFile = await pFileReader(opfBlob,'text')
   var opfContent = opfFile.explicitOriginalTarget.result
-  // 5.1 read metadata
+  // 4.1 read metadata
   var metadata = opfContent.substring(opfContent.indexOf('<metadata'),opfContent.indexOf('</metadata>'))
-  // 5.2 read manifest (lists all the files contained in the package, has id to filename mapping useful later)
+  var bookName = getMetadata('dc:title',metadata)
+  // 4.2 read manifest (lists all the files contained in the package, has id to filename mapping useful later)
   var manifest = opfContent.substring(opfContent.indexOf('<manifest'),opfContent.indexOf('</manifest>'))
   var idToHref = {}
   var items = manifest.matchAll(/<item [^>]+>/gi)
@@ -142,13 +111,46 @@ async function fileToContent (file) {
     }
     idToHref[id] = href
   }
-  // 5.3 read spine (linear reading order of files, id mapping used here)
+  // 4.3 read spine (linear reading order of files, id mapping used here)
   var spine = opfContent.substring(opfContent.indexOf('<spine'),opfContent.indexOf('</spine>'))
   var orderedFilenames = []
   var spineItems = spine.matchAll(/<itemref [^>]+>/gi)
   for (const match of spineItems) {
     var idref = match.toString().match(/idref="[^"]+/).toString().substring(7)
     orderedFilenames.push(idToHref[idref])
+  }
+  // 5. parse the file contents
+  var fileResults = await Promise.all(blobResults.map((r,i) => pFileReader(r, blobPromises[i].name.match(imageRegex) ? 'image' : 'text')))
+  var parser = new DOMParser();
+  var filenameToContent = {}
+  for (var i = 0; i < fileResults.length; i++) {
+    var fname = blobPromises[i].name
+    if (fname.match(imageRegex)) filenameToContent[fname] = fileResults[i].target.result // image data
+    else if (fname.match(htmlRegex)) {
+      // html, i.e. text content
+      var chapterName = null
+      var htmlDoc = parser.parseFromString(fileResults[i].explicitOriginalTarget.result,"text/html")
+      var body = htmlDoc.getElementsByTagName("body")
+      // sometimes chapter titles are included in <title> tags in the head
+      var head = htmlDoc.getElementsByTagName("head")
+      if (head && head.length > 0) {
+        var title = head[0].getElementsByTagName("title")
+        // also need to check if <title> is not just book name
+        if (title && title.length > 0 && title[0].innerText.toLowerCase() != bookName.toLowerCase()) chapterName = title[0].innerText
+      }
+      if (!chapterName) {
+        // try to find heading tags with chapter name
+        for (var j = 0; j < 3; j++) {
+          var tags = htmlDoc.getElementsByTagName(["h1","h2"][j])
+          if (tags && tags.length > 0) {
+            chapterName = [...tags].map(tag => tag.innerText).join(" ")
+            break;
+          }
+        }
+      }
+      filenameToContent[fname] = new EbookChapter(chapterName,fname,htmlDoc,body ? body[0].innerText : null)
+    }
+    else filenameToContent[fname] = fileResults[i].explicitOriginalTarget.result // css
   }
   // 6. Process data into expected format (correct chapter order etc) and return
   // here possiblePrefix is used. Most books follow standard format of OEBPS but sometimes the path is different, this handles that
@@ -177,7 +179,7 @@ async function fileToContent (file) {
   }
   return new EbookContent(chapters,stylesheets,images,{
     author: getMetadata('dc:creator',metadata),
-    name: getMetadata('dc:title',metadata),
+    name: bookName,
     description: getMetadata('dc:description',metadata),
     publisher: getMetadata('dc:publisher',metadata),
     language: getMetadata('dc:language',metadata)
