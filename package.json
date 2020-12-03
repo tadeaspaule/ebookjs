@@ -1,6 +1,6 @@
 {
   "name": "ebookjs",
-  "version": "0.5.7",
+  "version": "0.5.8",
   "description": "Tiny utility for reading ebook file uploads",
   "repository": {
     "type": "git",
