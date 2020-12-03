@@ -13,11 +13,11 @@ Below is a simple example
 import ebookjs from 'ebookjs'
 function handleFileSelect (evt) {
   ebookjs.fileToContent(evt.target.files[0]).then(content => {
-    processChapters(content.chapters)
+    processChapters(content.chapters) // do whatever you want
   })
 }
 
-document.getElementById('upload').addEventListener('change', this.handleFileSelect, false);
+document.getElementById('upload').addEventListener('change', handleFileSelect, false);
 </script>
 ```
 
