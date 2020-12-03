@@ -8,7 +8,7 @@ This library is solely focused on reading files and returning objects you can wo
 Below is a simple example
 
 ```html
-<input id="upload" type=file accept="text/epub" name="files[]" size=1>
+<input id="upload" type="file" accept=".epub" size="1">
 <script>
 import ebookjs from 'ebookjs'
 function handleFileSelect (evt) {
@@ -29,7 +29,7 @@ fileToContent returns an object of type EbookContent, which has the following fi
 
 **stylesheets** : Object where keys are stylesheet filenames, values are text contents
 
-**images** : Object where keys are image filenames, values are dataURLs (so you can use ```<img :src="data.images[0][filename]"```)
+**images** : Object where keys are image filenames, values are dataURLs (so you can use ```<img :src="data.images[filename]"```)
 
 **metadata** : Object with the following self-explanatory fields: *author, name, publisher, description, language*. Only *name* and *language* are guaranteed to be non-null
 
