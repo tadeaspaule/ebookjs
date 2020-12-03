@@ -16,16 +16,6 @@ function pFileReader(file, mode){
   });
 }
 
-function getMetadata(tagName, metadata) {
-  var match = metadata.match(new RegExp(`<${tagName}[^>]*>[^>]+</${tagName}>`,'i'))
-  var value = null
-  if (match) {
-    value = match.toString()
-    value = value.substring(value.indexOf('>') + 1,value.length - `</${tagName}>`.length)
-  }
-  return value
-}
-
 class EbookContent {
   /**
    * @param  {EbookChapter[]} chapters - List of chapters. May contain things like Table of Contents, Preface, etc
@@ -90,7 +80,24 @@ async function fileToContent (file) {
   var opfContent = opfFile.explicitOriginalTarget.result
   // 4.1 read metadata
   var metadata = opfContent.substring(opfContent.indexOf('<metadata'),opfContent.indexOf('</metadata>'))
-  var bookName = getMetadata('dc:title',metadata)
+  var metadataObj = {}
+  var metadataTags = metadata.match(/<dc:[^>]+>[^<]+<\/[^>]+>/gi)
+  for (const match of metadataTags) {
+    var matchStr = match.toString()
+    var key = matchStr.match(/[^(>| )]+/i)
+    var val = matchStr.match(/>[^<]+/i)
+    if (key && val) {
+      key = key.toString().substring(4)
+      val = val.toString().substring(1)
+    }
+    if (!metadataObj[key]) metadataObj[key] = val
+    else if (typeof metadataObj[key] == 'string') {
+      console.log(typeof metadataObj[key])
+      metadataObj[key] = [metadataObj[key],val]
+    }
+    else metadataObj[key].push(val)
+  }
+  var bookName = metadataObj.name
   // 4.2 read manifest (lists all the files contained in the package, has id to filename mapping useful later)
   var manifest = opfContent.substring(opfContent.indexOf('<manifest'),opfContent.indexOf('</manifest>'))
   var idToHref = {}
@@ -136,14 +143,16 @@ async function fileToContent (file) {
       if (head && head.length > 0) {
         var title = head[0].getElementsByTagName("title")
         // also need to check if <title> is not just book name
-        if (title && title.length > 0 && title[0].innerText.toLowerCase() != bookName.toLowerCase()) chapterName = title[0].innerText
+        if (title && title.length > 0 && !bookName.toLowerCase().startsWith(title[0].innerText.toLowerCase())) {
+          chapterName = title[0].innerText.trim()
+        }
       }
       if (!chapterName) {
         // try to find heading tags with chapter name
         for (var j = 0; j < 3; j++) {
           var tags = htmlDoc.getElementsByTagName(["h1","h2"][j])
           if (tags && tags.length > 0) {
-            chapterName = [...tags].map(tag => tag.innerText).join(" ")
+            chapterName = tags[0].innerText.trim()
             break;
           }
         }
@@ -177,13 +186,7 @@ async function fileToContent (file) {
     if (fname.match(imageRegex)) images[fname] = filenameToContent[fname]
     else if (fname.match(stylesheetRegex)) stylesheets[fname] = filenameToContent[fname]
   }
-  return new EbookContent(chapters,stylesheets,images,{
-    author: getMetadata('dc:creator',metadata),
-    name: bookName,
-    description: getMetadata('dc:description',metadata),
-    publisher: getMetadata('dc:publisher',metadata),
-    language: getMetadata('dc:language',metadata)
-  })
+  return new EbookContent(chapters,stylesheets,images,metadataObj)
 }
 var ebookjs = {}
 ebookjs.fileToContent = fileToContent

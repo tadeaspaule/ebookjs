@@ -31,7 +31,7 @@ fileToContent returns an object of type EbookContent, which has the following fi
 
 **images** : Object where keys are image filenames, values are dataURLs (so you can use ```<img :src="data.images[filename]"```)
 
-**metadata** : Object with the following self-explanatory fields: *author, name, publisher, description, language*. Only *name* and *language* are guaranteed to be non-null
+**metadata** : Object with all metadata entries. Only *title*, *identifier*, and *language* are guaranteed to be non-null. Typically also includes information like *creator*, *publisher*, *date*, etc. Values are either Strings or arrays of Strings. Array of Strings happens when a metadata tag is specified multiple times, for example ```metadata.subject == ['Non-fiction', 'Biology']```
 
 Chapters
 -----
