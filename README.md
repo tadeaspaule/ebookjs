@@ -5,7 +5,12 @@ A library for easy reading of ebook files. Currently only supports reading .epub
 
 This library is solely focused on reading files and returning objects you can work with, there is no GUI reader functionality currently or planned. However, it is very simple to make your own with what ebookjs gives you; there is a simple VueJS example at the end of this readme.
 
-Below is a simple example
+Install
+-----
+```npm install ebookjs```
+
+Usage
+-----
 
 ```html
 <input id="upload" type="file" accept=".epub" size="1">
