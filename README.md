@@ -3,7 +3,7 @@ ebookjs
 
 A library for easy reading of ebook files. Currently only supports reading .epub files.
 
-This library is solely focused on reading files and returning objects you can work with, there is no GUI reader functionality currently or planned.
+This library is solely focused on reading files and returning objects you can work with, there is no GUI reader functionality currently or planned. However, it is very simple to make your own with what ebookjs gives you; there is a simple VueJS example at the end of this readme.
 
 Below is a simple example
 
@@ -53,3 +53,21 @@ To-do list
 2. Fixing bugs and edge/cases if any arise
 
 Please do open pull requests if you improve this, I can't say how much time I will have for maintaining and improving this
+
+VueJS ebook reader implementation
+-----
+Below is a way you might use ebookjs and VueJS to create an online ebook reader. From there, it's up to you what other features to provide, how to lay it out, etc.
+```html
+<div class="reader">
+    <!-- Basic chapter navigation; arrows and dropdown list -->
+    <div class="chapter-nav" v-if="chapters && chapters[index]">
+      <div class="arrow btn" :class="{'disabled': index == 0}" @click="index--">Previous Chapter</div>
+      <select v-model="index" style="max-width:30%;margin: 0px 20px;">
+        <option v-for="(ch,i) in chapters" :key="ch" :value="i">{{i+1}}. {{ch.name}}</option>
+      </select>
+      <div class="arrow btn" :class="{'disabled': index + 1 >= chapters.length}" @click="index++">Next Chapter</div>
+    </div>
+    <!-- v-html using the .html field shows properly formatted chapter content -->
+    <div class="chapter-content" v-if="chapters && chapters[index]" v-html="chapters[index].html.documentElement.innerHTML" />
+  </div>
+  ```
